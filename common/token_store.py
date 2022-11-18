@@ -4,12 +4,12 @@ token_temp = {}
 
 
 class TokenStore(object):
-    def __init__(self, secret):
+    def __init__(self, key):
         """
-        secret is used to distinguish different WE apps
-        :param secret: 
+        key is used to distinguish different Store
+        :param key:
         """
-        self.secret = secret
+        self.key = key
 
     def save(self, token, expires_in, create_time=None):
         """
@@ -20,7 +20,7 @@ class TokenStore(object):
         :return:
         """
         current_time = time.time()
-        token_temp[self.secret] = {
+        token_temp[self.key] = {
             'token': token,
             'expires_in': expires_in,
             'update_time': current_time,
@@ -32,10 +32,10 @@ class TokenStore(object):
         if token is expires, clear it and return None
         :return:
         """
-        if self.secret in token_temp:
-            token = token_temp[self.secret]
+        if self.key in token_temp:
+            token = token_temp[self.key]
             if time.time() - token['update_time'] > token['expires_in']:
-                token_temp.pop(self.secret)
+                token_temp.pop(self.key)
                 return None
             return token['token']
         return None
@@ -46,19 +46,19 @@ class TokenStore(object):
         :param expires_in: how long the token is valid, unit is second
         :return:
         """
-        if self.secret in token_temp:
-            token_dict = token_temp[self.secret]
+        if self.key in token_temp:
+            token_dict = token_temp[self.key]
             self.save(token_dict['token'], expires_in, token_dict['create_time'])
 
     @staticmethod
-    def clean(secret):
+    def clean(key):
         """
-        clean token by secret
-        :param secret: string
+        clean token by key
+        :param key: string
         :return:
         """
-        if secret in token_temp:
-            token_temp.pop(secret)
+        if key in token_temp:
+            token_temp.pop(key)
 
     @staticmethod
     def clean_all():
