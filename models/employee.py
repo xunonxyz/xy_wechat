@@ -76,9 +76,10 @@ class Employee(models.Model):
 
         for user in user_list:
             # job
+            position = user.get('title', None)
             job = self.env['hr.job'].search(
-                [('name', '=', user['position']), ('company_id', '=', we_app.company_id.id)])
-            if job.id is False:
+                [('name', '=', position), ('company_id', '=', we_app.company_id.id)])
+            if position and job.id is False:
                 job = self.env['hr.job'].create({
                     'name': user['position'],
                     'company_id': we_app.company_id.id
@@ -94,14 +95,12 @@ class Employee(models.Model):
                 'department_id': main_department.id,
                 'we_department_ids': [(4, we_department.id)],
                 'job_id': job.id,
-                'we_extattr': user['extattr'],
+                'we_extattr': user.get('extattr', None),
                 'active': user['status'] in USER_STATUS['active']
             }
 
             if employee.id is False:
                 modify_data['marital'] = False
-                modify_data['work_phone'] = False
-                modify_data['parent_id'] = False
                 create_users.append(modify_data)
             else:
                 employee.write_with_user(modify_data) if sync_with_user else employee.write(modify_data)

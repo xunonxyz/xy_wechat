@@ -22,7 +22,7 @@ class Department(models.Model):
         we_request = self.env.context.get('we_request')
         departments = await we_request.department_simplelist()
 
-        def get_tree_data(arr, parent_id):
+        def get_children(arr, parent_id):
             tree = []
             for item in arr:
                 if item['parentid'] == parent_id:
@@ -30,12 +30,25 @@ class Department(models.Model):
                         'id': item['id'],
                         'parentid': item['parentid'],
                         'order': item['order'],
-                        'children': get_tree_data(arr, item['id'])
+                        'children': get_children(arr, item['id'])
                     })
 
             return tree
 
-        return get_tree_data(departments, 1)
+        departments_tree = []
+
+        for dep in departments:
+            parents = list(filter(lambda x: x['id'] == dep['parentid'], departments))
+            if len(parents) == 0:
+                # this is root department
+                departments_tree.append({
+                    'id': dep['id'],
+                    'parentid': dep['parentid'],
+                    'order': dep['order'],
+                    'children': get_children(departments, dep['id'])
+                })
+
+        return departments_tree
 
     async def sync_department(self):
         """

@@ -8,17 +8,23 @@ import xml.etree.cElementTree as ET
 from odoo import http
 from odoo.http import route, request
 from ..common.we_request import we_request_instance, join_url
-from ..models.res_users import ResUsers
-from ..common.custom_encrypt import CustomEncrypt
 from ..common.callback.WXBizMsgCrypt import WXBizMsgCrypt
 
 # Crypto will show warning, ignore it
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-class WechatEnterprise(http.Controller):
+class WechatEnterpriseController(http.Controller):
     scan_oauth_url = 'https://open.work.weixin.qq.com/wwopen/sso/qrConnect?appid={corp_id}&agentid={agentid}&redirect_uri={redirect_uri}'
     web_oauth_url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid={corp_id}&redirect_uri={redirect_uri}&response_type=code&scope={scope}&agentid={agentid}#wechat_redirect'
+
+    @classmethod
+    def force_authenticate(cls, session, user):
+        session.pre_uid = user.id
+        session.pre_login = user.login
+        if not user._mfa_url():
+            session.finalize(request.env)
+        user._update_last_login()
 
     @http.route('/WW_verify_<string:filename>.txt', type='http', auth="none", methods=['GET'])
     def load_file(self, filename=None):
@@ -72,12 +78,7 @@ class WechatEnterprise(http.Controller):
         we_id = get_userid_task.result()
         employee = request.env['hr.employee'].sudo().search([('we_id', '=', we_id)])
         if employee.user_id.id:
-            secret_dict = {
-                'npa': True,
-                'type': 'we',
-                'password': CustomEncrypt.encrypt(ResUsers.we_auth_secret)
-            }
-            request.session.authenticate(request.session.db, employee.user_id.login, secret_dict)
+            self.force_authenticate(request.session, employee.user_id)
             return request.redirect('/web')
 
     @route('/we/oauth2/build/<string:oauth_type>/<int:app_id>', type='http', auth='public')
@@ -96,13 +97,13 @@ class WechatEnterprise(http.Controller):
 
         _redirect_uri = ''
         if oauth_type == 'scan':
-            _redirect_uri = WechatEnterprise.scan_oauth_url.format(
+            _redirect_uri = self.scan_oauth_url.format(
                 corp_id=corp_id,
                 agentid=agentid,
                 redirect_uri=redirect_uri
             )
         elif oauth_type == 'web':
-            _redirect_uri = WechatEnterprise.web_oauth_url.format(
+            _redirect_uri = self.web_oauth_url.format(
                 corp_id=corp_id,
                 agentid=agentid,
                 redirect_uri=redirect_uri,
