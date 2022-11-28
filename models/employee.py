@@ -1,6 +1,6 @@
 import asyncio
 
-from odoo import models, fields
+from odoo import models, fields, api
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
@@ -30,6 +30,11 @@ class Employee(models.Model):
     we_department_ids = fields.Many2many('hr.department', 'we_employee_department_rel', 'employee_id', 'department_id',
                                          string='Wechat Enterprise Departments')
     we_extattr = fields.Json(string='Wechat Enterprise User Extattr')
+
+    @api.depends('department_id.manager_id')
+    def _compute_parent_id(self):
+        for employee in self.filtered('department_id.manager_id'):
+            employee.parent_id = employee.department_id.manager_id
 
     def write_with_user(self, val):
         if self.user_id.id is False:
