@@ -1,6 +1,6 @@
 import asyncio
 
-from odoo import models, fields, api
+from odoo import models, fields, api, SUPERUSER_ID
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
@@ -137,10 +137,12 @@ class Employee(models.Model):
         :return: message id
         """
         assert app_id, 'app_id is required'
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
         if len(to_users) == 0 and len(to_departments) == 0:
             raise UserError(_('Please select the user or department to send the message!'))
 
-        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        app = self.env['wechat.enterprise.app'].browse(int(app_id))
         we_request = we_request_instance(app.corp_id, app.secret)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -164,7 +166,9 @@ class Employee(models.Model):
         """
         assert app_id, 'app_id is required'
         assert msg_id, 'msg_id is required'
-        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
+        app = self.env['wechat.enterprise.app'].browse(int(app_id))
         we_request = we_request_instance(app.corp_id, app.secret)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -180,14 +184,16 @@ class Employee(models.Model):
         :param company: receive company
         :return:
         """
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
         we_id = xml_tree.find('UserID').text
         # multi dep_id is split by ','
         we_dep_id = xml_tree.find('Department').text
         dep_id_list = we_dep_id.split(',')
-        we_departments = self.env['hr.department'].sudo().search(
+        we_departments = self.env['hr.department'].search(
             [('we_id', 'in', dep_id_list), ('company_id', '=', company.id)])
 
-        self.sudo().create({
+        self.create({
             'name': f'we_id_{we_id}',
             'we_id': we_id,
             'company_id': company.id,
@@ -206,17 +212,17 @@ class Employee(models.Model):
         :param company: receive company
         :return:
         """
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
         we_id = xml_tree.find('UserID').text
         new_we_id = xml_tree.find('NewUserId').text if xml_tree.find('NewUserId') else None
         # multi dep_id is split by ','
         we_dep_id = xml_tree.find('Department').text
         dep_id_list = we_dep_id.split(',')
-        we_departments = self.env['hr.department'].sudo().search(
+        we_departments = self.env['hr.department'].search(
             [('we_id', 'in', dep_id_list), ('company_id', '=', company.id)])
 
-        employee = self.sudo().search([('we_id', '=', we_id), ('company_id', '=', company.id)])
-        if employee.id is not False:
-            employee.write({
+        self.search([('we_id', '=', we_id), ('company_id', '=', company.id)]).write({
                 'we_id': new_we_id or we_id,
                 # use first department as main department temporarily
                 'department_id': we_departments[0].id if len(we_departments) > 0 else False,
@@ -231,8 +237,8 @@ class Employee(models.Model):
         :param company: receive company
         :return:
         """
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
         we_id = xml_tree.find('UserID').text
-        employee = self.sudo().search([('we_id', '=', we_id), ('company_id', '=', company.id)])
-        if employee.id is not False:
-            employee.write({'active': False})
+
+        self.search([('we_id', '=', we_id), ('company_id', '=', company.id)]).write({'active': False})
         return 'success'

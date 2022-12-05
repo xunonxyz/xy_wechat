@@ -1,6 +1,6 @@
 import asyncio
 
-from odoo import models, fields
+from odoo import models, fields, api, SUPERUSER_ID
 
 
 class Department(models.Model):
@@ -105,10 +105,12 @@ class Department(models.Model):
         :param company: receive company
         :return:
         """
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
         we_id = xml_tree.find('Id').text
         we_parent_id = xml_tree.find('ParentId').text
-        parent_dep = self.sudo().search([('we_id', '=', we_parent_id), ('company_id', '=', company.id)])
-        self.sudo().create({
+        parent_dep = self.search([('we_id', '=', we_parent_id), ('company_id', '=', company.id)])
+        self.create({
             'company_id': company.id,
             'name': f'we_id_{we_id}',
             'we_id': we_id,
@@ -125,11 +127,13 @@ class Department(models.Model):
         :param company: receive company
         :return:
         """
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
         we_id = xml_tree.find('Id').text
         we_parent_id = xml_tree.find('ParentId').text
-        dep = self.sudo().search([('we_id', '=', we_id), ('company_id', '=', company.id)])
+        dep = self.search([('we_id', '=', we_id), ('company_id', '=', company.id)])
         if dep.id is not False:
-            parent_dep = self.sudo().search([('we_id', '=', we_parent_id), ('company_id', '=', company.id)])
+            parent_dep = self.search([('we_id', '=', we_parent_id), ('company_id', '=', company.id)])
             dep.write({
                 'parent_id': parent_dep.id,
                 'we_parent_id': we_parent_id
@@ -143,8 +147,10 @@ class Department(models.Model):
         :param company: receive company
         :return:
         """
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
         we_id = xml_tree.find('Id').text
-        dep = self.sudo().search([('we_id', '=', we_id), ('company_id', '=', company.id)])
+        dep = self.search([('we_id', '=', we_id), ('company_id', '=', company.id)])
         if dep.id is not False:
             dep.unlink()
         return 'success'

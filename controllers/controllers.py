@@ -8,7 +8,7 @@ import xml.etree.cElementTree as ET
 from odoo import http
 from odoo.http import route, request
 from ..common.we_request import we_request_instance, join_url
-from ..common.callback.WXBizMsgCrypt import WXBizMsgCrypt
+from ..common.WXBizMsgCrypt import WXBizMsgCrypt
 
 # Crypto will show warning, ignore it
 warnings.filterwarnings("ignore", category=DeprecationWarning)
