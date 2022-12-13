@@ -44,3 +44,5 @@ WEQrcode.extractProps = ({attrs}) => {
 };
 
 registry.category("view_widgets").add("we_qrcode", WEQrcode);
+
+export default WEQrcode;

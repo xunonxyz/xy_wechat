@@ -77,6 +77,20 @@
 
 在「员工 - 企业微信模块日志」页面可进行查看  
 
+### 配置扫码登录后台
+
+扫码组件在模块内部作为一个widget进行封装，可以在任意地方进行使用，有两种方式进行使用
+1. 在view中能使用`<widget>`标签的地方使用`<widget name="we_qrcode" app_id="传入app的在系统内的id"/>`即可
+2. 将使用owl进行封装的扫码组件进行引入，然后在需要使用的地方mount扫码组件，比如：  
+```javascript
+import WEQrcode from '@xy_wechat/js/we_qrcode_widget';
+const { mount, Component } = owl;
+
+mount(WEQrcode, document.body, { props: {appId: '传入app的在系统内的id'} });
+```
+
+在「员工 - 企业微信模块日志」页面可进行查看
+
 ![./static/img/log.png](./static/img/log.png)
 
 ## ❤️ 支持
