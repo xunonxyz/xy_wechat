@@ -37,6 +37,11 @@ msgid "Callback Settings"
 msgstr "通讯录回调设置"
 
 #. module: wechat_enterprise
+#: model_terms:ir.ui.view,arch_db:wechat_enterprise.we_company_extend
+msgid "OA Callback Settings"
+msgstr "OA审批回调设置"
+
+#. module: wechat_enterprise
 #: model:ir.model,name:wechat_enterprise.model_res_company
 msgid "Companies"
 msgstr "公司"

@@ -1,12 +1,13 @@
 import aiohttp
 from urllib import parse
+import datetime
 
 from .token_store import TokenStore
 
 
 def check_response_error(response, error_code=0, error_msg_key='errmsg'):
     if response['errcode'] != error_code:
-        raise Exception(response[error_msg_key])
+        raise Exception(f'{response["errcode"]}, {response[error_msg_key]}')
 
 
 def join_url(base_url, *args):
@@ -208,6 +209,7 @@ class WeRequest(object):
         :param media_id: media id
         :return: media content bytes
         """
+
         async def _cb(res):
             return await res.read()
 
@@ -216,6 +218,98 @@ class WeRequest(object):
             'media_id': media_id
         }, response_callback=_cb)
         return response
+
+    async def get_oa_template_detail(self, template_id):
+        """
+        get oa template detail from server, only can get from wechat enterprise own approval application
+        :param template_id: template id
+        :return: oa template
+        """
+        assert template_id, 'template_id is required'
+        response = await self.post_response(
+            join_url(self.url_prefix, f'oa/gettemplatedetail?access_token={await self.latest_token()}'), {
+                'template_id': template_id
+            })
+        check_response_error(response)
+        return {
+            'template_names': response['template_names'],
+            'template_content': response['template_content'],
+        }
+
+    async def get_oa_approve_list(self, starttime=None, endtime=None, cursor=0, size=100, filters=None):
+        """
+        get oa approve info from server
+        :param starttime: start time, Unix timestamp, default is 1 weeks ago
+        :param endtime: end time, Unix timestamp, default is now
+        :param cursor: cursor, default is 0
+        :param size: size, default is 100
+        :param filters: filter Array
+        :return: approve info
+        """
+        if not all([starttime, endtime]):
+            now = datetime.datetime.now()
+            endtime = round(now.timestamp())
+            starttime = round((now - datetime.timedelta(weeks=4)).timestamp())
+
+        response = await self.post_response(
+            join_url(self.url_prefix, f'oa/getapprovalinfo?access_token={await self.latest_token()}'), {
+                'starttime': starttime,
+                'endtime': endtime,
+                'cursor': cursor,
+                'size': size,
+                'filters': filters
+            })
+        check_response_error(response)
+        return response.get('sp_no_list', None)
+
+    async def get_oa_approve_detail(self, sp_no):
+        """
+        get oa approve detail from server
+        :param sp_no: sp_no from get_oa_approve_info
+        :return: approve detail
+        """
+        assert sp_no, 'sp_no is required'
+        response = await self.post_response(
+            join_url(self.url_prefix, f'oa/getapprovaldetail?access_token={await self.latest_token()}'), {
+                'sp_no': sp_no
+            })
+        check_response_error(response)
+        return response.get('info', None)
+
+    async def get_corp_vacation_conf(self):
+        """
+        get corp vacation conf from server
+        :return: vacation conf
+        """
+        response = await self.get_response(
+            join_url(self.url_prefix, f'oa/vacation/getcorpconf?access_token={await self.latest_token()}'))
+        check_response_error(response)
+        return response.get('lists', None)
+
+    async def get_user_vacation_quota(self, userid):
+        """
+        get user vacation quota from server
+        :param userid: wechat enterprise user id
+        :return: vacation quota
+        """
+        assert userid, 'userid is required'
+        response = await self.post_response(
+            join_url(self.url_prefix, f'oa/vacation/getuservacationquota?access_token={await self.latest_token()}'), {
+                'userid': userid
+            })
+        check_response_error(response)
+        return response.get('lists', None)
+
+    async def apply_oa_event(self, apply_data):
+        """
+        apply oa event from server
+        :param apply_data: apply data
+        :return: apply result
+        """
+        response = await self.post_response(
+            join_url(self.url_prefix, f'oa/applyevent?access_token={await self.latest_token()}'), apply_data)
+        check_response_error(response)
+        return response.get('sp_no', None)
 
 
 def we_request_instance(corp_id, secret):

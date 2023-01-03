@@ -111,26 +111,18 @@ class WechatEnterpriseController(http.Controller):
             )
         return request.redirect(_redirect_uri, 303, False)
 
-    @route('/we/mail_list/callback', type='http', auth='public', csrf=False)
-    def we_callback(self, msg_signature, timestamp, nonce, echostr=''):
+    @route('/we/mail_list/callback/<int:company_id>', type='http', auth='public', csrf=False)
+    def we_callback(self, company_id, msg_signature, timestamp, nonce, echostr=''):
+        company = request.env['res.company'].sudo().browse(company_id)
         if request.httprequest.method == 'GET':
             result = None
-            company_list = request.env['res.company'].sudo().search([])
-            for company in company_list:
-                if company.we_cb_token and company.we_cb_encoding_AES_key:
-                    wxcpt = WXBizMsgCrypt(company.we_cb_token, company.we_cb_encoding_AES_key, company.we_corp_id)
-                    ret, s_echo_str = wxcpt.VerifyURL(msg_signature, timestamp, nonce, echostr)
-                    if ret == 0:
-                        result = s_echo_str
-                        break
+            wxcpt = WXBizMsgCrypt(company.we_cb_token, company.we_cb_encoding_AES_key, company.we_corp_id)
+            ret, s_echo_str = wxcpt.VerifyURL(msg_signature, timestamp, nonce, echostr)
+            if ret == 0:
+                result = s_echo_str
             return result
         else:
             data = request.httprequest.data.decode('utf-8')
-            # get ToUserName to match company corp_id
-            temp_xml_tree = ET.fromstring(data)
-            corp_id = temp_xml_tree.find('ToUserName').text
-            company = request.env['res.company'].sudo().search([('we_corp_id', '=', corp_id)])
-
             wxcpt = WXBizMsgCrypt(company.we_cb_token, company.we_cb_encoding_AES_key, company.we_corp_id)
             ret, result = wxcpt.DecryptMsg(data, msg_signature, timestamp, nonce)
             if ret == 0:
@@ -144,3 +136,79 @@ class WechatEnterpriseController(http.Controller):
                 if func:
                     return func(xml_tree, company)
             return ''
+
+    @route('/we/oa/callback/<int:company_id>', type='http', auth='public', csrf=False)
+    def we_oa_callback(self, company_id, msg_signature, timestamp, nonce, echostr=''):
+        company = request.env['res.company'].sudo().browse(company_id)
+        if request.httprequest.method == 'GET':
+            result = None
+            wxcpt = WXBizMsgCrypt(company.we_oa_cb_token, company.we_oa_cb_encoding_AES_key, company.we_corp_id)
+            ret, s_echo_str = wxcpt.VerifyURL(msg_signature, timestamp, nonce, echostr)
+            if ret == 0:
+                result = s_echo_str
+            return result
+        else:
+            data = request.httprequest.data.decode('utf-8')
+            wxcpt = WXBizMsgCrypt(company.we_oa_cb_token, company.we_oa_cb_encoding_AES_key, company.we_corp_id)
+            ret, result = wxcpt.DecryptMsg(data, msg_signature, timestamp, nonce)
+            if ret == 0:
+                xml_tree = ET.fromstring(result)
+                company.on_we_oa_event(xml_tree)
+            return ''
+
+    @route('/we/test', auth='public')
+    def test_api(self):
+        app = request.env['wechat.enterprise.app'].sudo().search([], limit=1)
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        task = loop.create_task(we_request.apply_oa_event({
+            "creator_userid": "YinChaoQi",
+            "template_id": "C4RcZo5yLzKLR7VFZxvbXeqxPr54HAkpEVCzfQycF",
+            "use_template_approver": 0,
+            "approver": [
+                {
+                    "attr": 1,
+                    "userid": ["YinChaoQi"]
+                }
+            ],
+            "notifyer": [],
+            "notify_type": 1,
+            "apply_data": {
+                "contents": [
+                    {
+                        "control": "Text",
+                        "id": "Text-1640339319582",
+                        "value": {
+                            "text": "文本填写的内容"
+                        }
+                    }
+                ]
+            },
+            "summary_list": [
+                {
+                    "summary_info": [{
+                        "text": "摘要第1行",
+                        "lang": "zh_CN"
+                    }]
+                },
+                {
+                    "summary_info": [{
+                        "text": "摘要第2行",
+                        "lang": "zh_CN"
+                    }]
+                },
+                {
+                    "summary_info": [{
+                        "text": "摘要第3行",
+                        "lang": "zh_CN"
+                    }]
+                }
+            ]
+        }))
+
+        loop.run_until_complete(task)
+        loop.close()
+        result = task.result()
+        print(result)

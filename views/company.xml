@@ -20,6 +20,13 @@
                         <field name="we_cb_encoding_AES_key" password="True"/>
                     </group>
 
+                    <h2 style="margin-top: 4px;">OA Callback Settings</h2>
+
+                    <group>
+                        <field name="we_oa_cb_token" password="True"/>
+                        <field name="we_oa_cb_encoding_AES_key" password="True"/>
+                    </group>
+
                     <field name="app_ids">
                         <tree create="1" delete="1">
                             <field name="name"/>
