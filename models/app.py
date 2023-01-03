@@ -127,3 +127,103 @@ class App(models.Model):
         loop.run_until_complete(get_media_task)
         loop.close()
         return get_media_task.result()
+
+    def get_oa_template_detail(self, app_id, template_id):
+        """
+        get oa template detail from wechat server
+        :param app_id: save in which app server
+        :param template_id: template id in wechat server
+        :return: template detail
+        """
+        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        get_oa_template_detail_task = loop.create_task(we_request.get_oa_template_detail(template_id))
+        loop.run_until_complete(get_oa_template_detail_task)
+        loop.close()
+        return get_oa_template_detail_task.result()
+
+    def get_oa_approve_list(self, app_id, start_time, end_time, cursor=0, size=100, filters=None):
+        """
+        get oa approve list from wechat server
+        :param app_id: save in which app server
+        :param start_time: start time
+        :param end_time: end time
+        :param cursor: cursor
+        :param size: size
+        :param filters: filters
+        :return: approve list
+        """
+        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        get_oa_approve_list_task = loop.create_task(
+            we_request.get_oa_approve_list(start_time, end_time, cursor, size, filters))
+        loop.run_until_complete(get_oa_approve_list_task)
+        loop.close()
+        return get_oa_approve_list_task.result()
+
+    def get_oa_approve_detail(self, app_id, sp_no):
+        """
+        get oa approve detail from wechat server
+        :param app_id: save in which app server
+        :param sp_no: sp_no from get_oa_approve_info
+        :return: approve detail
+        """
+        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        get_oa_approve_detail_task = loop.create_task(we_request.get_oa_approve_detail(sp_no))
+        loop.run_until_complete(get_oa_approve_detail_task)
+        loop.close()
+        return get_oa_approve_detail_task.result()
+
+    def get_corp_vacation_config(self, app_id):
+        """
+        get corp vacation config from wechat server
+        :param app_id: save in which app server
+        :return: vacation config
+        """
+        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        get_corp_vacation_config_task = loop.create_task(we_request.get_corp_vacation_config())
+        loop.run_until_complete(get_corp_vacation_config_task)
+        loop.close()
+        return get_corp_vacation_config_task.result()
+
+    def get_user_vacation_quota(self, app_id, userid):
+        """
+        get user vacation quota from wechat server
+        :param app_id: save in which app server
+        :param userid: wechat enterprise user id, not odoo id
+        :return: vacation quota
+        """
+        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        get_user_vacation_quota_task = loop.create_task(we_request.get_user_vacation_quota(userid))
+        loop.run_until_complete(get_user_vacation_quota_task)
+        loop.close()
+        return get_user_vacation_quota_task.result()
+
+    def apply_oa_event(self, app_id, apply_data):
+        """
+        apply oa event from wechat server
+        :param app_id: save in which app server
+        :param apply_data: reference https://developer.work.weixin.qq.com/document/path/91853
+        :return: apply result
+        """
+        app = self.env['wechat.enterprise.app'].sudo().browse(int(app_id))
+        we_request = we_request_instance(app.corp_id, app.secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        apply_oa_event_task = loop.create_task(we_request.apply_oa_event(apply_data))
+        loop.run_until_complete(apply_oa_event_task)
+        loop.close()
+        return apply_oa_event_task.result()
